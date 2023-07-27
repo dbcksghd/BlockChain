@@ -21,28 +21,37 @@ peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.exa
 cat log.txt
 sleep 3
 
-echo "TEST2 : QueryAllUser"
+echo "TEST2 : Register"
+set -x
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"Register","Args":["yoochanhong1", "50", "1207"]}' >&log.txt
+{ set +x; } 2>/dev/null
+cat log.txt
+sleep 3
+
+
+echo "TEST3 : QueryAllUser"
 set -x
 peer chaincode query -C mychannel -n fabcar -c '{"Args":["QueryAllUser"]}' >&log.txt
 { set +x; } 2>/dev/null
 cat log.txt
 
-echo "TEST3 : MakeBank"
-set -x
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"MakeBank","Args":["1000"]}' >&log.txt
-{ set +x; } 2>/dev/null
-cat log.txt
-sleep 3
 
-echo "TEST4 : TurnRoulette"
+echo "TEST4 : QueryUser"
 set -x
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"TurnRoulette","Args":["10", "1206", "bank"]}' >&log.txt
+peer chaincode query -C mychannel -n fabcar -c '{"Args":["QueryAllUser", "1206"]}' >&log.txt
 { set +x; } 2>/dev/null
 cat log.txt
-sleep 3
 
-echo "TEST5 : QueryAllUser"
-set -x
-peer chaincode query -C mychannel -n fabcar -c '{"Args":["QueryAllUser"]}' >&log.txt
-{ set +x; } 2>/dev/null
-cat log.txt
+# echo "TEST5 : MakeBank"
+# set -x
+# peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"MakeBank","Args":["1000"]}' >&log.txt
+# { set +x; } 2>/dev/null
+# cat log.txt
+# sleep 3
+
+# echo "TEST6 : TurnRoulette"
+# set -x
+# peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"TurnRoulette","Args":["10", "1206", "bank"]}' >&log.txt
+# { set +x; } 2>/dev/null
+# cat log.txt
+# sleep 3
