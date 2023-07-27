@@ -21,6 +21,11 @@ type User struct {
 	Ban        bool   `json:"ban"`
 }
 
+type QueryResult struct {
+	Key    string `json:"key"`
+	Record *User
+}
+
 func main() {
 	os.Setenv("DISCOVERY_AS_LOCALHOST", "true")
 	e := echo.New()
@@ -155,7 +160,7 @@ func a() *gateway.Contract {
 		fmt.Printf("Failed to get network: %s\n", err)
 		os.Exit(1)
 	}
-
+ 
 	contract := network.GetContract("fabcar")
 	return contract
 }
