@@ -85,7 +85,8 @@ func main() {
 		}
 		newUser := new(userDTO)
 		_ = c.Bind(newUser)
-		_, err := contract.SubmitTransaction("Register", newUser.Name, strconv.Itoa(newUser.Money), newUser.Id)
+		moneyAsString := strconv.Itoa(newUser.Money)
+		_, err = contract.SubmitTransaction("Register", newUser.Name, moneyAsString, newUser.Id)
 		if err != nil {
 			return c.JSON(500, err)
 		}
