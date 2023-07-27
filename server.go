@@ -72,6 +72,32 @@ func main() {
 		return c.JSON(201, map[string]string{"massage": "성공적으로 등록되었습니다"})
 	})
 
+	e.GET("/roulette", func(c echo.Context) error {
+		type RouletteDTO struct {
+			Money string
+			Box   string
+			Id    string
+		}
+
+		type RouletteRes struct {
+			Price int
+			Error error
+		}
+		contract := a()
+		newRoulette := RouletteDTO{}
+		_ = c.Bind(&newRoulette)
+		result, err := contract.SubmitTransaction("TurnRoulette", newRoulette.Money, newRoulette.Id, newRoulette.Box)
+		if err != nil {
+			return c.JSON(500, err)
+		}
+		rouletteRes := RouletteRes{}
+		err = json.Unmarshal(result, &rouletteRes)
+		if err != nil {
+			return c.JSON(500, err)
+		}
+		return c.JSON(200, map[string]string{"price": strconv.Itoa(rouletteRes.Price)})
+	})
+
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
