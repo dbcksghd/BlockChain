@@ -73,23 +73,24 @@ func main() {
 			return c.JSON(500, err)
 		}
 		users := []User{}
-		_ = json.Unmarshal(result, &users)
+		_ = json.Unmarshal(string(result), &users)
 		return c.JSON(200, users)
 	})
 
 	e.POST("/user", func(c echo.Context) error {
-		type userDTO struct {
+		type UserDTO struct {
 			Money int    `json:"money"`
 			Name  string `json:"name"`
 			Id    string `json:"id"`
 		}
-		newUser := new(userDTO)
-		_ = c.Bind(newUser)
+		newUser := UserDTO{}
+		_ = c.Bind(&newUser)
 		moneyAsString := strconv.Itoa(newUser.Money)
-		_, err = contract.SubmitTransaction("Register", newUser.Name, moneyAsString, newUser.Id)
+		_ , err = contract.SubmitTransaction("Register", newUser.Name, moneyAsString, newUser.Id)
 		if err != nil {
 			return c.JSON(500, err)
 		}
+	
 		return c.JSON(201, map[string]string{"massage": "성공적으로 등록되었습니다"})
 	})
 
