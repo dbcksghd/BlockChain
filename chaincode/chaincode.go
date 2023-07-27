@@ -38,6 +38,15 @@ func isTrueUserBan(user *User) bool {
 }
 
 func (s *SmartContract) Register(ctx contractapi.TransactionContextInterface, name string, money string, id string) error {
+	userAsBytes1, err := ctx.GetStub().GetState(id)
+	if err != nil {
+			return err
+	}
+	user1 := new(User)
+	_ = json.Unmarshal(userAsBytes1, user1)
+	if user1.Name != ""{
+		return fmt.Errorf("이미 등록된 유저입니다.")
+	}
 	moneyAsInt, _ := strconv.Atoi(money)
 	user := User{
 			LuckyScore: rand.Intn(50),
@@ -48,13 +57,15 @@ func (s *SmartContract) Register(ctx contractapi.TransactionContextInterface, na
 	}
 	userAsBytes, err := json.Marshal(user)
 	if err != nil {
-			log.Fatal(err)
+			return err
 	}
-	return ctx.GetStub().PutState(id, userAsBytes)
+	_ = ctx.GetStub().PutState(id, userAsBytes)
+	return nil
 }
 
 func (s *SmartContract) MakeBank(ctx contractapi.TransactionContextInterface, money string) error {
-	strongBox := StrongBox{Money : 1000}
+	moneyAsInt, _ := strconv.Atoi(money)
+	strongBox := StrongBox{Money : moneyAsInt}
 	boxAsBytes, err := json.Marshal(strongBox)
 	if err != nil {
 			log.Fatal(err)
