@@ -2,183 +2,204 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
-	"log"
-	"math/rand"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/gateway"
+	"github.com/labstack/echo/v4"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strconv"
 )
 
-type SmartContract struct {
-	contractapi.Contract
-}
-
 type User struct {
-	LuckyScore int
-	Money      int
-	Name       string
-	Warning    int
-	Ban        bool
-}
-
-type StrongBox struct {
-	Money int
+	LuckyScore int    `json:"luckyScore"`
+	Money      int    `json:"money"`
+	Name       string `json:"name"`
+	Warning    int    `json:"warning"`
+	Ban        bool   `json:"ban"`
 }
 
 type QueryResult struct {
 	Key    string `json:"key"`
-	Record *User
-}
-
-func isTrueUserBan(user *User) bool {
-	if user.Ban == true {
-		return true
-	}
-	return false
-}
-
-func (s *SmartContract) Register(ctx contractapi.TransactionContextInterface, name string, money string, id string) error {
-	userAsBytes1, err := ctx.GetStub().GetState(id)
-	if err != nil {
-		return err
-	}
-	user1 := new(User)
-	_ = json.Unmarshal(userAsBytes1, user1)
-	if user1.Name != "" {
-		return fmt.Errorf("이미 등록된 유저입니다.")
-	}
-	moneyAsInt, _ := strconv.Atoi(money)
-	user := User{
-		LuckyScore: rand.Intn(50),
-		Money:      moneyAsInt,
-		Name:       name,
-		Warning:    2,
-		Ban:        false,
-	}
-	userAsBytes, err := json.Marshal(user)
-	if err != nil {
-		return err
-	}
-	_ = ctx.GetStub().PutState(id, userAsBytes)
-	return nil
-}
-
-func (s *SmartContract) MakeBank(ctx contractapi.TransactionContextInterface, money string) error {
-	moneyAsInt, _ := strconv.Atoi(money)
-	strongBox := StrongBox{Money: moneyAsInt}
-	boxAsBytes, err := json.Marshal(strongBox)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return ctx.GetStub().PutState("bank", boxAsBytes)
-}
-
-func (s *SmartContract) TurnRoulette(ctx contractapi.TransactionContextInterface, money string, id, box string) (int, error) {
-	userAsBytes, err := ctx.GetStub().GetState(id)
-	if err != nil {
-		return -1, err
-	}
-	user := new(User)
-	_ = json.Unmarshal(userAsBytes, user)
-	if isTrueUserBan(user) == true {
-		return -1, fmt.Errorf("룰렛 금지")
-	}
-	boxAsBytes, err := ctx.GetStub().GetState(box)
-	if err != nil {
-		return -1, err
-	}
-	strongBox := new(StrongBox)
-	_ = json.Unmarshal(boxAsBytes, strongBox)
-	moneyAsInt, _ := strconv.Atoi(money)
-	strongBox.Money += moneyAsInt
-	user.Money -= moneyAsInt
-	roulette := 100 - user.LuckyScore
-	randomValue := rand.Intn(roulette)
-	if randomValue == 1 {
-		user.LuckyScore = 0
-		strongBox.Money -= user.LuckyScore * 2
-		user.Money += user.LuckyScore * 2
-		userAsBytes, err = json.Marshal(user)
-		boxAsBytes, err = json.Marshal(strongBox)
-		_ = ctx.GetStub().PutState(box, boxAsBytes)
-		_ = ctx.GetStub().PutState(id, userAsBytes)
-		return user.LuckyScore * 2, nil
-	} else {
-		user.LuckyScore += 5
-		userAsBytes, err = json.Marshal(user)
-		boxAsBytes, err = json.Marshal(strongBox)
-		_ = ctx.GetStub().PutState(box, boxAsBytes)
-		_ = ctx.GetStub().PutState(id, userAsBytes)
-		return 0, nil
-	}
-}
-
-func (s *SmartContract) QueryAllUser(ctx contractapi.TransactionContextInterface) ([]QueryResult, error) {
-	startKey, endKey := "", ""
-	resultsIterator, err := ctx.GetStub().GetStateByRange(startKey, endKey)
-
-	if err != nil {
-		return nil, err
-	}
-	defer resultsIterator.Close()
-
-	results := []QueryResult{}
-
-	for resultsIterator.HasNext() {
-		queryRes, err := resultsIterator.Next()
-
-		if err != nil {
-			return nil, err
-		}
-
-		user := new(User)
-		_ = json.Unmarshal(queryRes.Value, user)
-
-		queryResult := QueryResult{Key: queryRes.Key, Record: user}
-		if user.Name != "" {
-			results = append(results, queryResult)
-		}
-	}
-
-	return results, nil
-}
-
-func (s *SmartContract) BorrowMoney(ctx contractapi.TransactionContextInterface, money string, id string) error {
-	userAsBytes, err := ctx.GetStub().GetState(id)
-	if err != nil {
-		return fmt.Errorf(err.Error())
-	}
-	user := new(User)
-	_ = json.Unmarshal(userAsBytes, user)
-	if isTrueUserBan(user) == true {
-		return fmt.Errorf("돈 못빌림")
-	}
-	boxAsBytes, err := ctx.GetStub().GetState("bank")
-	if err != nil {
-		return fmt.Errorf(err.Error())
-	}
-	strongBox := new(StrongBox)
-	_ = json.Unmarshal(boxAsBytes, strongBox)
-	moneyAsInt, _ := strconv.Atoi(money)
-	if moneyAsInt > strongBox.Money {
-		return fmt.Errorf("요청한 돈이 매우 큼")
-	}
-	user.Money += moneyAsInt
-	user.Warning--
-	boxAsBytes, err = json.Marshal(strongBox)
-	_ = ctx.GetStub().PutState("bank", boxAsBytes)
-	userAsBytes, err = json.Marshal(user)
-	return ctx.GetStub().PutState(id, userAsBytes)
+	Record *User  `json:"record"`
 }
 
 func main() {
-	chaincode, err := contractapi.NewChaincode(new(SmartContract))
+	os.Setenv("DISCOVERY_AS_LOCALHOST", "true")
+	e := echo.New()
+
+	e.GET("/user", func(c echo.Context) error {
+		contract := a()
+		result, err := contract.EvaluateTransaction("QueryAllUser")
+		if err != nil {
+			return c.JSON(500, err)
+		}
+		users := []QueryResult{}
+		err = json.Unmarshal(result, &users)
+		if err != nil {
+			return c.JSON(500, err.Error())
+		}
+		fmt.Println(users)
+		return c.JSON(200, users)
+	})
+
+	e.POST("/user", func(c echo.Context) error {
+		type UserDTO struct {
+			Money int    `json:"money"`
+			Name  string `json:"name"`
+			Id    string `json:"id"`
+		}
+		newUser := UserDTO{}
+		_ = c.Bind(&newUser)
+		moneyAsString := strconv.Itoa(newUser.Money)
+		contract := a()
+		_, err := contract.SubmitTransaction("Register", newUser.Name, moneyAsString, newUser.Id)
+		if err != nil {
+			return c.JSON(500, err.Error())
+		}
+		return c.JSON(201, map[string]string{"massage": "성공적으로 등록되었습니다"})
+	})
+
+	e.GET("/bank", func(c echo.Context) error {
+		money := c.QueryParam("money")
+		contract := a()
+		_, err := contract.SubmitTransaction("MakeBank", money)
+		if err != nil {
+			return c.JSON(500, err)
+		}
+		return c.JSON(201, map[string]string{"massage": "성공적으로 등록되었습니다"})
+	})
+
+	e.GET("/roulette", func(c echo.Context) error {
+		type RouletteDTO struct {
+			Money string `json:"money"`
+			Box   string `json:"box"`
+			Id    string `json:"id"`
+		}
+
+		type RouletteRes struct {
+			Price int   `json:"price"`
+			Error error `json:"error"`
+		}
+		contract := a()
+		newRoulette := RouletteDTO{}
+		_ = c.Bind(&newRoulette)
+		result, err := contract.SubmitTransaction("TurnRoulette", newRoulette.Money, newRoulette.Id, newRoulette.Box)
+		if err != nil {
+			return c.JSON(500, err)
+		}
+		rouletteRes := RouletteRes{}
+		err = json.Unmarshal(result, &rouletteRes)
+		if err != nil {
+			return c.JSON(500, err)
+		}
+		return c.JSON(200, map[string]string{"price": strconv.Itoa(rouletteRes.Price)})
+	})
+
+	e.GET("/borrow", func(c echo.Context) error {
+		type BorrowDTO struct {
+			Money string `json:"money"`
+			Id    string `json:"id"`
+		}
+		borrowDto := BorrowDTO{}
+		_ = c.Bind(&borrowDto)
+		contract := a()
+		_, err := contract.SubmitTransaction("BorrowMoney", borrowDto.Money, borrowDto.Id)
+		if err != nil {
+			return c.JSON(500, err)
+		}
+		return c.JSON(200, map[string]string{"message": "요청이 성공적으로 완료되었습니다"})
+	})
+	e.Logger.Fatal(e.Start(":8080"))
+}
+
+func populateWallet(wallet *gateway.Wallet) error {
+	credPath := filepath.Join(
+		"..",
+		"..",
+		"..",
+		"test-network",
+		"organizations",
+		"peerOrganizations",
+		"org1.example.com",
+		"users",
+		"User1@org1.example.com",
+		"msp",
+	)
+
+	certPath := filepath.Join(credPath, "signcerts", "cert.pem")
+	cert, err := ioutil.ReadFile(filepath.Clean(certPath))
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		return err
 	}
 
-	if err = chaincode.Start(); err != nil {
-		fmt.Println(err.Error())
+	keyDir := filepath.Join(credPath, "keystore")
+	files, err := ioutil.ReadDir(keyDir)
+	if err != nil {
+		return err
 	}
+	if len(files) != 1 {
+		return errors.New("keystore folder should have contain one file")
+	}
+	keyPath := filepath.Join(keyDir, files[0].Name())
+	key, err := ioutil.ReadFile(filepath.Clean(keyPath))
+	if err != nil {
+		return err
+	}
+
+	identity := gateway.NewX509Identity("Org1MSP", string(cert), string(key))
+
+	err = wallet.Put("appUser", identity)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func a() *gateway.Contract {
+	wallet, err := gateway.NewFileSystemWallet("wallet")
+	if err != nil {
+		fmt.Printf("Failed to create wallet: %s\n", err)
+		os.Exit(1)
+	}
+
+	if !wallet.Exists("appUser") {
+		err = populateWallet(wallet)
+		if err != nil {
+			fmt.Printf("Failed to populate wallet contents: %s\n", err)
+			os.Exit(1)
+		}
+	}
+
+	ccpPath := filepath.Join(
+		"..",
+		"..",
+		"..",
+		"test-network",
+		"organizations",
+		"peerOrganizations",
+		"org1.example.com",
+		"connection-org1.yaml",
+	)
+
+	gw, err := gateway.Connect(
+		gateway.WithConfig(config.FromFile(filepath.Clean(ccpPath))),
+		gateway.WithIdentity(wallet, "appUser"),
+	)
+	if err != nil {
+		fmt.Printf("Failed to connect to gateway: %s\n", err)
+		os.Exit(1)
+	}
+	defer gw.Close()
+
+	network, err := gw.GetNetwork("mychannel")
+	if err != nil {
+		fmt.Printf("Failed to get network: %s\n", err)
+		os.Exit(1)
+	}
+
+	contract := network.GetContract("fabcar")
+	return contract
 }
