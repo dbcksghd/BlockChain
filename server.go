@@ -73,7 +73,10 @@ func main() {
 			return c.JSON(500, err)
 		}
 		users := []User{}
-		_ = json.Unmarshal(result, &users)
+		err = json.Unmarshal(result, &users)
+		if err != nil{
+			return c.JSON(500, err.Error)
+		}
 		fmt.Println(users)
 		return c.JSON(200, users)
 	})
@@ -89,20 +92,20 @@ func main() {
 		moneyAsString := strconv.Itoa(newUser.Money)
 		_, err = contract.SubmitTransaction("Register", newUser.Name, moneyAsString, newUser.Id)
 		if err != nil {
-			return c.JSON(500, err)
+			return c.JSON(500, err.Error())
 		}
-
 		return c.JSON(201, map[string]string{"massage": "성공적으로 등록되었습니다"})
 	})
 
 	e.GET("/bank", func(c echo.Context) error {
-		_, err := contract.SubmitTransaction("MakeBank")
-
+		_, err := contract.SubmitTransaction("MakeBank", "1000")
 		if err != nil {
 			return c.JSON(500, err)
 		}
 		return c.JSON(201, map[string]string{"massage": "성공적으로 등록되었습니다"})
 	})
+
+
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
