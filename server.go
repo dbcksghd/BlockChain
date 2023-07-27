@@ -63,8 +63,9 @@ func main() {
 	})
 
 	e.GET("/bank", func(c echo.Context) error {
+		money := c.QueryParam("money")
 		contract := a()
-		_, err := contract.SubmitTransaction("MakeBank", "1000")
+		_, err := contract.SubmitTransaction("MakeBank", money)
 		if err != nil {
 			return c.JSON(500, err)
 		}
