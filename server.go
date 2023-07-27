@@ -36,10 +36,10 @@ func main() {
 		if err != nil {
 			return c.JSON(500, err)
 		}
-		users := []User{}
+		users := []QueryResult{}
 		err = json.Unmarshal(result, &users)
 		if err != nil {
-			return c.JSON(500, err.Error)
+			return c.JSON(500, err.Error())
 		}
 		fmt.Println(users)
 		return c.JSON(200, users)
@@ -160,7 +160,7 @@ func a() *gateway.Contract {
 		fmt.Printf("Failed to get network: %s\n", err)
 		os.Exit(1)
 	}
- 
+
 	contract := network.GetContract("fabcar")
 	return contract
 }
