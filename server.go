@@ -24,57 +24,16 @@ type User struct {
 func main() {
 	os.Setenv("DISCOVERY_AS_LOCALHOST", "true")
 	e := echo.New()
-	wallet, err := gateway.NewFileSystemWallet("wallet")
-	if err != nil {
-		fmt.Printf("Failed to create wallet: %s\n", err)
-		os.Exit(1)
-	}
-
-	if !wallet.Exists("appUser") {
-		err = populateWallet(wallet)
-		if err != nil {
-			fmt.Printf("Failed to populate wallet contents: %s\n", err)
-			os.Exit(1)
-		}
-	}
-
-	ccpPath := filepath.Join(
-		"..",
-		"..",
-		"..",
-		"test-network",
-		"organizations",
-		"peerOrganizations",
-		"org1.example.com",
-		"connection-org1.yaml",
-	)
-
-	gw, err := gateway.Connect(
-		gateway.WithConfig(config.FromFile(filepath.Clean(ccpPath))),
-		gateway.WithIdentity(wallet, "appUser"),
-	)
-	if err != nil {
-		fmt.Printf("Failed to connect to gateway: %s\n", err)
-		os.Exit(1)
-	}
-	defer gw.Close()
-
-	network, err := gw.GetNetwork("mychannel")
-	if err != nil {
-		fmt.Printf("Failed to get network: %s\n", err)
-		os.Exit(1)
-	}
-
-	contract := network.GetContract("fabcar")
 
 	e.GET("/user", func(c echo.Context) error {
+		contract := a()
 		result, err := contract.EvaluateTransaction("QueryAllUser")
 		if err != nil {
 			return c.JSON(500, err)
 		}
 		users := []User{}
 		err = json.Unmarshal(result, &users)
-		if err != nil{
+		if err != nil {
 			return c.JSON(500, err.Error)
 		}
 		fmt.Println(users)
@@ -90,7 +49,8 @@ func main() {
 		newUser := UserDTO{}
 		_ = c.Bind(&newUser)
 		moneyAsString := strconv.Itoa(newUser.Money)
-		_, err = contract.SubmitTransaction("Register", newUser.Name, moneyAsString, newUser.Id)
+		contract := a()
+		_, err := contract.SubmitTransaction("Register", newUser.Name, moneyAsString, newUser.Id)
 		if err != nil {
 			return c.JSON(500, err.Error())
 		}
@@ -98,13 +58,13 @@ func main() {
 	})
 
 	e.GET("/bank", func(c echo.Context) error {
+		contract := a()
 		_, err := contract.SubmitTransaction("MakeBank", "1000")
 		if err != nil {
 			return c.JSON(500, err)
 		}
 		return c.JSON(201, map[string]string{"massage": "성공적으로 등록되었습니다"})
 	})
-
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
@@ -152,4 +112,50 @@ func populateWallet(wallet *gateway.Wallet) error {
 		return err
 	}
 	return nil
+}
+
+func a() *gateway.Contract {
+	wallet, err := gateway.NewFileSystemWallet("wallet")
+	if err != nil {
+		fmt.Printf("Failed to create wallet: %s\n", err)
+		os.Exit(1)
+	}
+
+	if !wallet.Exists("appUser") {
+		err = populateWallet(wallet)
+		if err != nil {
+			fmt.Printf("Failed to populate wallet contents: %s\n", err)
+			os.Exit(1)
+		}
+	}
+
+	ccpPath := filepath.Join(
+		"..",
+		"..",
+		"..",
+		"test-network",
+		"organizations",
+		"peerOrganizations",
+		"org1.example.com",
+		"connection-org1.yaml",
+	)
+
+	gw, err := gateway.Connect(
+		gateway.WithConfig(config.FromFile(filepath.Clean(ccpPath))),
+		gateway.WithIdentity(wallet, "appUser"),
+	)
+	if err != nil {
+		fmt.Printf("Failed to connect to gateway: %s\n", err)
+		os.Exit(1)
+	}
+	defer gw.Close()
+
+	network, err := gw.GetNetwork("mychannel")
+	if err != nil {
+		fmt.Printf("Failed to get network: %s\n", err)
+		os.Exit(1)
+	}
+
+	contract := network.GetContract("fabcar")
+	return contract
 }
