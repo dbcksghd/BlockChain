@@ -143,6 +143,19 @@ func (s *SmartContract) QueryAllUser(ctx contractapi.TransactionContextInterface
 	return results, nil
 }
 
+func (s *SmartContract) QueryUser(ctx contractapi.TransactionContextInterface, id string) (*User, error) {
+	userAsBytes, err := ctx.GetStub().GetState(id)
+	if err != nil {
+		return nil, fmt.Errorf("불러오기 실패")
+	}
+	if userAsBytes == nil {
+		return nil, fmt.Errorf("유저 정보가 없음")
+	}
+	user := new(User)
+	_ = json.Unmarshal(userAsBytes, user)
+	return user, nil
+}
+
 func (s *SmartContract) BorrowMoney(ctx contractapi.TransactionContextInterface, money string, id string) error {
 	userAsBytes, err := ctx.GetStub().GetState(id)
 	if err != nil {
