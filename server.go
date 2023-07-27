@@ -23,7 +23,7 @@ type User struct {
 
 type QueryResult struct {
 	Key    string `json:"key"`
-	Record *User
+	Record *User  `json:"record"`
 }
 
 func main() {
@@ -74,14 +74,14 @@ func main() {
 
 	e.GET("/roulette", func(c echo.Context) error {
 		type RouletteDTO struct {
-			Money string
-			Box   string
-			Id    string
+			Money string `json:"money"`
+			Box   string `json:"box"`
+			Id    string `json:"id"`
 		}
 
 		type RouletteRes struct {
-			Price int
-			Error error
+			Price int   `json:"price"`
+			Error error `json:"error"`
 		}
 		contract := a()
 		newRoulette := RouletteDTO{}
@@ -98,6 +98,20 @@ func main() {
 		return c.JSON(200, map[string]string{"price": strconv.Itoa(rouletteRes.Price)})
 	})
 
+	e.GET("/borrow", func(c echo.Context) error {
+		type BorrowDTO struct {
+			Money string `json:"money"`
+			Id    string `json:"id"`
+		}
+		borrowDto := BorrowDTO{}
+		_ = c.Bind(&borrowDto)
+		contract := a()
+		_, err := contract.SubmitTransaction("BorrowMoney", borrowDto.Money, borrowDto.Id)
+		if err != nil {
+			return c.JSON(500, err)
+		}
+		return c.JSON(200, map[string]string{"message": "요청이 성공적으로 완료되었습니다"})
+	})
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
@@ -116,14 +130,12 @@ func populateWallet(wallet *gateway.Wallet) error {
 	)
 
 	certPath := filepath.Join(credPath, "signcerts", "cert.pem")
-	// read the certificate pem
 	cert, err := ioutil.ReadFile(filepath.Clean(certPath))
 	if err != nil {
 		return err
 	}
 
 	keyDir := filepath.Join(credPath, "keystore")
-	// there's a single file in this dir containing the private key
 	files, err := ioutil.ReadDir(keyDir)
 	if err != nil {
 		return err
