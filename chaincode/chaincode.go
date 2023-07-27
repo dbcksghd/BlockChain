@@ -143,7 +143,7 @@ func (s *SmartContract) QueryAllUser(ctx contractapi.TransactionContextInterface
 	return results, nil
 }
 
-func (s *SmartContract) borrowMoney(ctx contractapi.TransactionContextInterface, money string, id, box string) error {
+func (s *SmartContract) BorrowMoney(ctx contractapi.TransactionContextInterface, money string, id, box string) error {
 	userAsBytes, err := ctx.GetStub().GetState(id)
 	if err != nil {
 			return fmt.Errorf(err.Error())
