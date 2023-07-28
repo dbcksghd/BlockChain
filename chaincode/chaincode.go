@@ -31,7 +31,7 @@ type QueryResult struct {
 }
 
 func isTrueUserBan(user User) bool {
-	if user.Ban == true || user.Warning == 0{
+	if user.Ban == true || user.Warning == 0 {
 		return true
 	}
 	return false
@@ -165,6 +165,8 @@ func (s *SmartContract) BorrowMoney(ctx contractapi.TransactionContextInterface,
 	_ = json.Unmarshal(userAsBytes, &user)
 	if z := isTrueUserBan(user); z == true {
 		user.Ban = true
+		userAsBytes1, _ := json.Marshal(user)
+		_ = ctx.GetStub().PutState(id, userAsBytes1)
 		return fmt.Errorf("돈 못빌림")
 	}
 	boxAsBytes, err := ctx.GetStub().GetState("bank")
