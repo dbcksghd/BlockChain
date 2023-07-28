@@ -111,7 +111,7 @@ func main() {
 			return c.JSON(500, err)
 		}
 		result, _ := contract.EvaluateTransaction("QueryUser", borrowDto.Id)
-		user := new(User)
+		user := User{}
 		_ = json.Unmarshal(result, &user)
 		return c.JSON(200, map[string]string{"message": "요청이 성공적으로 완료되었습니다", "잔액": strconv.Itoa(user.Money), "카운트": strconv.Itoa(user.Warning)})
 	})
