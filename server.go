@@ -75,7 +75,6 @@ func main() {
 	e.GET("/roulette", func(c echo.Context) error {
 		type RouletteDTO struct {
 			Money string `json:"money"`
-			Box   string `json:"box"`
 			Id    string `json:"id"`
 		}
 
@@ -86,7 +85,7 @@ func main() {
 		contract := a()
 		newRoulette := RouletteDTO{}
 		_ = c.Bind(&newRoulette)
-		result, err := contract.SubmitTransaction("TurnRoulette", newRoulette.Money, newRoulette.Id, newRoulette.Box)
+		result, err := contract.SubmitTransaction("TurnRoulette", newRoulette.Money, newRoulette.Id)
 		if err != nil {
 			return c.JSON(500, err)
 		}
