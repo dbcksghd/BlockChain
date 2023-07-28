@@ -30,8 +30,8 @@ type QueryResult struct {
 	Record *User
 }
 
-func isTrueUserBan(user *User) bool {
-	if user.Ban == true {
+func isTrueUserBan(user User) bool {
+	if user.Ban == true || user.Warning == 0{
 		return true
 	}
 	return false
@@ -78,9 +78,9 @@ func (s *SmartContract) TurnRoulette(ctx contractapi.TransactionContextInterface
 	if err != nil {
 		return -1, err
 	}
-	user := new(User)
-	_ = json.Unmarshal(userAsBytes, user)
-	if isTrueUserBan(user) == true {
+	user := User{}
+	_ = json.Unmarshal(userAsBytes, &user)
+	if z := isTrueUserBan(user); z == true {
 		return -1, fmt.Errorf("룰렛 금지")
 	}
 	boxAsBytes, err := ctx.GetStub().GetState(box)
@@ -163,7 +163,8 @@ func (s *SmartContract) BorrowMoney(ctx contractapi.TransactionContextInterface,
 	}
 	user := User{}
 	_ = json.Unmarshal(userAsBytes, &user)
-	if isTrueUserBan(&user) == true {
+	if z := isTrueUserBan(user); z == true {
+		user.Ban = true
 		return fmt.Errorf("돈 못빌림")
 	}
 	boxAsBytes, err := ctx.GetStub().GetState("bank")
