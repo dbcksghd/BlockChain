@@ -91,6 +91,9 @@ func main() {
 		}
 		rouletteRes := RouletteRes{}
 		_ = json.Unmarshal(result, &rouletteRes)
+		if rouletteRes.Price == -1 {
+			return c.JSON(403, map[string]string{"message": "잔액이 부족하거나 권한이 없습니다"})
+		}
 		return c.JSON(200, map[string]string{"price": strconv.Itoa(rouletteRes.Price)})
 	})
 
