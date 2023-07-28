@@ -180,7 +180,7 @@ func (s *SmartContract) BorrowMoney(ctx contractapi.TransactionContextInterface,
 	user.Warning--
 	boxAsBytes, err = json.Marshal(strongBox)
 	_ = ctx.GetStub().PutState("bank", boxAsBytes)
-	userAsBytes, err = json.Marshal(user)
+	userAsBytes, _ = json.Marshal(*user)
 	return ctx.GetStub().PutState(id, userAsBytes)
 }
 
