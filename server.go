@@ -90,10 +90,7 @@ func main() {
 			return c.JSON(500, err)
 		}
 		rouletteRes := RouletteRes{}
-		err = json.Unmarshal(result, &rouletteRes)
-		if err != nil {
-			return c.JSON(500, err)
-		}
+		_ = json.Unmarshal(result, &rouletteRes)
 		return c.JSON(200, map[string]string{"price": strconv.Itoa(rouletteRes.Price)})
 	})
 
