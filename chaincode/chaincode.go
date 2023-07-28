@@ -73,7 +73,7 @@ func (s *SmartContract) MakeBank(ctx contractapi.TransactionContextInterface, mo
 	return ctx.GetStub().PutState("bank", boxAsBytes)
 }
 
-func (s *SmartContract) TurnRoulette(ctx contractapi.TransactionContextInterface, money string, id, box string) (int, error) {
+func (s *SmartContract) TurnRoulette(ctx contractapi.TransactionContextInterface, money string, id string) (int, error) {
 	userAsBytes, err := ctx.GetStub().GetState(id)
 	if err != nil {
 		return -1, err
@@ -83,12 +83,12 @@ func (s *SmartContract) TurnRoulette(ctx contractapi.TransactionContextInterface
 	if z := isTrueUserBan(user); z == true {
 		return -1, fmt.Errorf("룰렛 금지")
 	}
-	boxAsBytes, err := ctx.GetStub().GetState(box)
+	boxAsBytes, err := ctx.GetStub().GetState("bank")
 	if err != nil {
 		return -1, err
 	}
-	strongBox := new(StrongBox)
-	_ = json.Unmarshal(boxAsBytes, strongBox)
+	strongBox := StrongBox{}
+	_ = json.Unmarshal(boxAsBytes, &strongBox)
 	moneyAsInt, _ := strconv.Atoi(money)
 	strongBox.Money += moneyAsInt
 	user.Money -= moneyAsInt
@@ -100,14 +100,14 @@ func (s *SmartContract) TurnRoulette(ctx contractapi.TransactionContextInterface
 		user.Money += user.LuckyScore * 2
 		userAsBytes, err = json.Marshal(user)
 		boxAsBytes, err = json.Marshal(strongBox)
-		_ = ctx.GetStub().PutState(box, boxAsBytes)
+		_ = ctx.GetStub().PutState("bank", boxAsBytes)
 		_ = ctx.GetStub().PutState(id, userAsBytes)
 		return user.LuckyScore * 2, nil
 	} else {
 		user.LuckyScore += 5
 		userAsBytes, err = json.Marshal(user)
 		boxAsBytes, err = json.Marshal(strongBox)
-		_ = ctx.GetStub().PutState(box, boxAsBytes)
+		_ = ctx.GetStub().PutState("bank", boxAsBytes)
 		_ = ctx.GetStub().PutState(id, userAsBytes)
 		return 0, nil
 	}
@@ -163,7 +163,7 @@ func (s *SmartContract) BorrowMoney(ctx contractapi.TransactionContextInterface,
 	}
 	user := User{}
 	_ = json.Unmarshal(userAsBytes, &user)
-	if z := isTrueUserBan(user); z == true {
+	if isTrueUserBan(user) == true {
 		user.Ban = true
 		userAsBytes1, _ := json.Marshal(user)
 		_ = ctx.GetStub().PutState(id, userAsBytes1)
