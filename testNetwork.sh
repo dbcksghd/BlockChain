@@ -38,20 +38,47 @@ cat log.txt
 
 echo "TEST4 : QueryUser"
 set -x
-peer chaincode query -C mychannel -n fabcar -c '{"Args":["QueryAllUser", "1206"]}' >&log.txt
+peer chaincode query -C mychannel -n fabcar -c '{"Args":["QueryUser", "1206"]}' >&log.txt
 { set +x; } 2>/dev/null
 cat log.txt
 
-# echo "TEST5 : MakeBank"
-# set -x
-# peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"MakeBank","Args":["1000"]}' >&log.txt
-# { set +x; } 2>/dev/null
-# cat log.txt
-# sleep 3
+echo "TEST5 : MakeBank"
+set -x
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"MakeBank","Args":["1000"]}' >&log.txt
+{ set +x; } 2>/dev/null
+cat log.txt
+sleep 3
 
-# echo "TEST6 : TurnRoulette"
-# set -x
-# peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"TurnRoulette","Args":["10", "1206", "bank"]}' >&log.txt
-# { set +x; } 2>/dev/null
-# cat log.txt
-# sleep 3
+echo "TEST6 : BorrowMoney"
+set -x
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"BorrowMoney","Args":["100", "1207"]}' >&log.txt
+{ set +x; } 2>/dev/null
+cat log.txts
+sleep 3
+
+echo "TEST7 : BorrowMoney"
+set -x
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"BorrowMoney","Args":["100", "1207"]}' >&log.txt
+{ set +x; } 2>/dev/null
+cat log.txts
+sleep 3
+
+echo "TEST8 : BorrowMoney"
+set -x
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"BorrowMoney","Args":["100", "1207"]}' >&log.txt
+{ set +x; } 2>/dev/null
+cat log.txts
+sleep 3
+
+echo "TEST9 : TurnRoulette"
+set -x
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C mychannel -n fabcar $PEER_CONN_PARMS -c '{"function":"TurnRoulette","Args":["60", "1206"]}' >&log.txt
+{ set +x; } 2>/dev/null
+cat log.txts
+sleep 3
+
+echo "TEST10 : QueryAllUser"
+set -x
+peer chaincode query -C mychannel -n fabcar -c '{"Args":["QueryAllUser"]}' >&log.txt
+{ set +x; } 2>/dev/null
+cat log.txt
