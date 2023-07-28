@@ -161,17 +161,17 @@ func (s *SmartContract) BorrowMoney(ctx contractapi.TransactionContextInterface,
 	if err != nil {
 		return fmt.Errorf(err.Error())
 	}
-	user := new(User)
-	_ = json.Unmarshal(userAsBytes, user)
-	if isTrueUserBan(user) == true {
+	user := User{}
+	_ = json.Unmarshal(userAsBytes, &user)
+	if isTrueUserBan(&user) == true {
 		return fmt.Errorf("돈 못빌림")
 	}
 	boxAsBytes, err := ctx.GetStub().GetState("bank")
 	if err != nil {
 		return fmt.Errorf(err.Error())
 	}
-	strongBox := new(StrongBox)
-	_ = json.Unmarshal(boxAsBytes, strongBox)
+	strongBox := StrongBox{}
+	_ = json.Unmarshal(boxAsBytes, &strongBox)
 	moneyAsInt, _ := strconv.Atoi(money)
 	if moneyAsInt > strongBox.Money {
 		return fmt.Errorf("요청한 돈이 매우 큼")
@@ -180,7 +180,7 @@ func (s *SmartContract) BorrowMoney(ctx contractapi.TransactionContextInterface,
 	user.Warning--
 	boxAsBytes, err = json.Marshal(strongBox)
 	_ = ctx.GetStub().PutState("bank", boxAsBytes)
-	userAsBytes, _ = json.Marshal(*user)
+	userAsBytes, _ = json.Marshal(user)
 	return ctx.GetStub().PutState(id, userAsBytes)
 }
 
